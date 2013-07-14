@@ -1,0 +1,28 @@
+name: DCArrows
+main: me.PimpDuck.DCArrows.DCArrows
+version: 1.0
+description: Lets Diamcraft players imbue arrows with a potion's effects by placing a potion in the inventory slot directly to the right of a bow.
+author: PimpDuck
+
+permissions:
+    dcarrows.allow:
+        description: Allows use of DCArrows
+    dcarrows.queue:
+        description: Allows potions of the same type to be queued to the left of the bow
+        children:
+            dcarrows.allow: true
+    dcarrows.queue.anytype:
+        description: Allows potions of other types to be queued to the left of the bow
+        children:
+            dcarrows.queue: true
+            dcarrows.allow: true
+    dcarrows.nonsplash:
+        description: Allows non splash potions to be consumed by the player
+    dcarrows.*:
+        description: Sets all permissions to true
+        default: op
+        children:
+            dcarrows.allow: true
+            dcarrows.queue: true
+            dcarrows.queue.anytype: true
+            dcarrows.nonsplash: true
