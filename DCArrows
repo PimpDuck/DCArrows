@@ -1,0 +1,280 @@
+package me.PimpDuck.DCArrows;
+
+import java.util.List;
+import java.util.logging.Logger;
+import org.bukkit.Effect;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
+import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.Potion;
+import org.bukkit.potion.PotionEffect;
+
+
+public class DCArrows extends JavaPlugin implements Listener{
+  
+	Logger log = Logger.getLogger("Minecraft");
+	
+	@Override
+	public void onEnable(){
+		 this.log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	        this.log.info("[DCArrows] is now enabled!");
+	        this.log.info("Copyright 2013 PimpDuck All rights reserved.");
+	        this.log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	        getServer().getPluginManager().registerEvents(this, this);
+
+	}
+	
+	@Override
+	public void onDisable(){
+		 this.log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	        this.log.info("[DCArrows] is now disabled!");
+	        this.log.info("Copyright 2013 PimpDuck All rights reserved.");
+	        this.log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+	}
+	
+	@EventHandler
+	  public void firedArrow(EntityDamageByEntityEvent event)
+	  {
+	    if ((event.getDamager() instanceof Projectile)) {
+	      Projectile arrow = (Projectile)event.getDamager();
+
+	      if (((event.getEntity() instanceof LivingEntity)) && ((arrow.getShooter() instanceof Player)))
+	      {
+	        Player shooter = (Player)arrow.getShooter();
+	        if (shooter.hasPermission("dcarrows.allow"))
+	        {
+	          LivingEntity target = (LivingEntity)event.getEntity();
+	          PlayerInventory inventory = shooter.getInventory();
+	          if (inventory.getItemInHand().getType() == Material.BOW)
+	          {
+	            int bowslot = inventory.getHeldItemSlot();
+
+	            if ((bowslot >= 0) && (bowslot <= 7))
+	            {
+	              int potionslot = bowslot + 1;
+	              ItemStack item = inventory.getItem(potionslot);
+
+	              if (item.getTypeId() == 373) {
+	                int dv = item.getDurability();
+	                if ((dv != 0) && (dv != 16) && (dv != 32) && (dv != 64) && (dv != 16384) && (dv != 8192))
+	                {
+	                  if (Potion.fromItemStack(item).isSplash())
+	                  {
+	                    if (!shooter.hasPermission("dcarrows.queue")) {
+	                      Potion potion = Potion.fromItemStack(item);
+
+	                      applyPotionEffects(potion, target);
+	                      World world = target.getWorld();
+	                      world.playEffect(target.getLocation(), Effect.POTION_BREAK, item.getDurability());
+	                      inventory.clear(potionslot);
+	                    } else {
+	                      int firstpotionslot = 0;
+	                      for (int i = 0; i < 10; i++)
+	                      {
+	                        ItemStack x = inventory.getItem(i);
+	                        if ((x != null) && (x.getType() == Material.POTION)) {
+	                          int dr = x.getDurability();
+	                          if ((dr != 0) || (dr != 16) || (dr != 32) || (dr != 64) || (dr != 16384) || (dr != 8192)) {
+	                            firstpotionslot = i;
+	                            break;
+	                          }
+	                        }
+	                      }
+	                      if (shooter.hasPermission("dcarrows.queue.anytype")) {
+	                        if (shooter.hasPermission("dcarrows.nonsplash")) {
+	                          ItemStack x = inventory.getItem(firstpotionslot);
+	                          Potion potion = Potion.fromItemStack(x);
+	                          if (potion.isSplash())
+	                          {
+	                            applyPotionEffects(potion, target);
+	                            World world = target.getWorld();
+	                            world.playEffect(target.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                            int amount = x.getAmount() - 1;
+	                            if (amount <= 0) {
+	                              inventory.clear(firstpotionslot);
+	                            } else {
+	                              x.setAmount(amount);
+	                              inventory.setItem(firstpotionslot, x);
+	                            }
+	                          }
+	                          else
+	                          {
+	                            applyPotionEffects(potion, shooter);
+	                            World world = shooter.getWorld();
+	                            world.playEffect(shooter.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                            int amount = x.getAmount() - 1;
+	                            if (amount <= 0) {
+	                              inventory.clear(firstpotionslot);
+	                            } else {
+	                              x.setAmount(amount);
+	                              inventory.setItem(firstpotionslot, x);
+	                            }
+	                          }
+
+	                        }
+	                        else
+	                        {
+	                          for (int i = 0; i < 8; i++) {
+	                            ItemStack x = inventory.getItem(firstpotionslot);
+	                            if ((x != null) && (x.getType() == Material.POTION)) {
+	                              Potion potion = Potion.fromItemStack(x);
+	                              int dt = x.getDurability();
+	                              if ((potion.isSplash()) && ((dt != 0) || (dt != 16) || (dt != 32) || (dt != 64) || (dt != 16384) || (dt != 8192)))
+	                              {
+	                                applyPotionEffects(potion, target);
+	                                World world = target.getWorld();
+	                                world.playEffect(target.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                                int amount = x.getAmount() - 1;
+	                                if (amount <= 0) {
+	                                  inventory.clear(firstpotionslot); break;
+	                                }
+	                                x.setAmount(amount);
+	                                inventory.setItem(firstpotionslot, x);
+
+	                                break;
+	                              }
+	                              firstpotionslot++;
+	                            }
+	                            else {
+	                              firstpotionslot++;
+	                            }
+	                          }
+	                        }
+	                      }
+	                      else
+	                      {
+	                        for (int i = 0; i < 8; i++) {
+	                          ItemStack x = inventory.getItem(firstpotionslot);
+	                          if ((x != null) && (x.getType() == Material.POTION) && (x.getDurability() == dv)) {
+	                            Potion potion = Potion.fromItemStack(x);
+
+	                            applyPotionEffects(potion, target);
+	                            World world = target.getWorld();
+	                            world.playEffect(target.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                            int amount = x.getAmount() - 1;
+	                            if (amount <= 0) {
+	                              inventory.clear(firstpotionslot); break;
+	                            }
+	                            x.setAmount(amount);
+	                            inventory.setItem(firstpotionslot, x);
+
+	                            break;
+	                          }
+	                          firstpotionslot++;
+	                        }
+	                      }
+	                    }
+	                  }
+
+	                  if ((shooter.hasPermission("dcarrows.nonsplash")) && (!Potion.fromItemStack(item).isSplash()))
+	                    if (shooter.hasPermission("dcarrows.queue")) {
+	                      if (shooter.hasPermission("dcarrows.queue.anytype")) {
+	                        int firstpotionslot = 0;
+	                        for (int i = 0; i < 10; i++)
+	                        {
+	                          ItemStack x = inventory.getItem(i);
+	                          if ((x != null) && (x.getType() == Material.POTION)) {
+	                            int dr = x.getDurability();
+	                            if ((dr != 0) || (dr != 16) || (dr != 32) || (dr != 64) || (dr != 16384) || (dr != 8192)) {
+	                              firstpotionslot = i;
+	                              break;
+	                            }
+	                          }
+	                        }
+	                        ItemStack x = inventory.getItem(firstpotionslot);
+	                        Potion potion = Potion.fromItemStack(x);
+	                        if (potion.isSplash())
+	                        {
+	                          applyPotionEffects(potion, target);
+	                          World world = target.getWorld();
+	                          world.playEffect(target.getLocation(), Effect.POTION_BREAK, x.getDurability());
+
+	                          int amount = x.getAmount() - 1;
+	                          if (amount <= 0) {
+	                            inventory.clear(firstpotionslot);
+	                          } else {
+	                            x.setAmount(amount);
+	                            inventory.setItem(firstpotionslot, x);
+	                          }
+	                        }
+	                        else {
+	                          applyPotionEffects(potion, shooter);
+	                          World world = shooter.getWorld();
+	                          world.playEffect(shooter.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                          int amount = x.getAmount() - 1;
+	                          if (amount <= 0) {
+	                            inventory.clear(firstpotionslot);
+	                          } else {
+	                            x.setAmount(amount);
+	                            inventory.setItem(firstpotionslot, x);
+	                          }
+	                        }
+
+	                      }
+	                      else
+	                      {
+	                        int firstpotionslot = inventory.first(373);
+
+	                        for (int i = 0; i < 8; i++) {
+	                          ItemStack x = inventory.getItem(firstpotionslot);
+	                          if ((x != null) && (x.getType() == Material.POTION) && (x.getDurability() == dv)) {
+	                            Potion potion = Potion.fromItemStack(x);
+
+	                            applyPotionEffects(potion, shooter);
+	                            World world = shooter.getWorld();
+	                            world.playEffect(shooter.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                            int amount = x.getAmount() - 1;
+	                            if (amount <= 0) {
+	                              inventory.clear(firstpotionslot); break;
+	                            }
+	                            x.setAmount(amount);
+	                            inventory.setItem(firstpotionslot, x);
+
+	                            break;
+	                          }
+	                          firstpotionslot++;
+	                        }
+	                      }
+
+	                    }
+	                    else
+	                    {
+	                      Potion potion = Potion.fromItemStack(item);
+
+	                      applyPotionEffects(potion, shooter);
+	                      World world = shooter.getWorld();
+	                      world.playEffect(shooter.getLocation(), Effect.POTION_BREAK, item.getDurability());
+	                      inventory.clear(potionslot);
+	                    }
+	                }
+	              }
+	            }
+	          }
+	        }
+	      }
+	    }
+	  }
+
+	  void applyPotionEffects(Potion potion, LivingEntity entity)
+	  {
+	    ItemStack stack = potion.toItemStack(1);
+	    PotionMeta meta = (PotionMeta)stack.getItemMeta();
+	    if (meta.hasCustomEffects()) {
+	      List<PotionEffect> effects = meta.getCustomEffects();
+	      for (PotionEffect i : effects)
+	        entity.addPotionEffect(i);
+	    }
+	    else {
+	      potion.apply(entity);
+	    }
+	  }
+	}
