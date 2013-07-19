@@ -3,14 +3,17 @@ package me.PimpDuck.DCArrows;
 import java.util.List;
 import java.util.logging.Logger;
 import org.bukkit.Effect;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.entity.Arrow;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.PotionMeta;
@@ -22,7 +25,7 @@ import org.bukkit.potion.PotionEffect;
 public class DCArrows extends JavaPlugin implements Listener{
   
 	Logger log = Logger.getLogger("Minecraft");
-	
+
 	@Override
 	public void onEnable(){
 		 this.log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -32,7 +35,7 @@ public class DCArrows extends JavaPlugin implements Listener{
 	        getServer().getPluginManager().registerEvents(this, this);
 
 	}
-	
+
 	@Override
 	public void onDisable(){
 		 this.log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
@@ -40,20 +43,36 @@ public class DCArrows extends JavaPlugin implements Listener{
 	        this.log.info("Copyright 2013 PimpDuck All rights reserved.");
 	        this.log.info("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 	}
-	
-	@EventHandler
-	  public void firedArrow(EntityDamageByEntityEvent event)
-	  {
-	    if ((event.getDamager() instanceof Projectile)) {
-	      Projectile arrow = (Projectile)event.getDamager();
 
-	      if (((event.getEntity() instanceof LivingEntity)) && ((arrow.getShooter() instanceof Player)))
+	@EventHandler
+	  public void onProjectileHit(ProjectileHitEvent event)
+	  {
+	    if ((event.getEntity() instanceof Projectile)) {
+	      Projectile projectile = event.getEntity();
+
+	      Arrow arrow;
+	        Player player;
+
+	        // Only interested in arrows.
+	        try {
+	            arrow = (Arrow) projectile;
+	        } catch (ClassCastException e) {
+	            return;
+	        }
+
+	        // Only interested in players shooting.
+	        try {
+	            player = (Player) arrow.getShooter();
+	        } catch (ClassCastException e) {
+	            return;
+	        }
+	      
 	      {
 	        Player shooter = (Player)arrow.getShooter();
 	        if (shooter.hasPermission("dcarrows.allow"))
 	        {
-	          LivingEntity target = (LivingEntity)event.getEntity();
-	          PlayerInventory inventory = shooter.getInventory();
+	          Projectile target = (Projectile)event.getEntity();
+	          PlayerInventory inventory = player.getInventory();
 	          if (inventory.getItemInHand().getType() == Material.BOW)
 	          {
 	            int bowslot = inventory.getHeldItemSlot();
@@ -72,9 +91,9 @@ public class DCArrows extends JavaPlugin implements Listener{
 	                    if (!shooter.hasPermission("dcarrows.queue")) {
 	                      Potion potion = Potion.fromItemStack(item);
 
-	                      applyPotionEffects(potion, target);
-	                      World world = target.getWorld();
-	                      world.playEffect(target.getLocation(), Effect.POTION_BREAK, item.getDurability());
+	                      applyPotionEffects(potion, arrow.getWorld(), arrow.getLocation(), shooter);
+	                      World world = arrow.getWorld();
+	                      world.playEffect(arrow.getLocation(), Effect.POTION_BREAK, item.getDurability());
 	                      inventory.clear(potionslot);
 	                    } else {
 	                      int firstpotionslot = 0;
@@ -95,9 +114,9 @@ public class DCArrows extends JavaPlugin implements Listener{
 	                          Potion potion = Potion.fromItemStack(x);
 	                          if (potion.isSplash())
 	                          {
-	                            applyPotionEffects(potion, target);
-	                            World world = target.getWorld();
-	                            world.playEffect(target.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                            applyPotionEffects(potion, arrow.getWorld(), arrow.getLocation(), shooter);
+	                            World world = arrow.getWorld();
+	                            world.playEffect(arrow.getLocation(), Effect.POTION_BREAK, x.getDurability());
 	                            int amount = x.getAmount() - 1;
 	                            if (amount <= 0) {
 	                              inventory.clear(firstpotionslot);
@@ -108,9 +127,9 @@ public class DCArrows extends JavaPlugin implements Listener{
 	                          }
 	                          else
 	                          {
-	                            applyPotionEffects(potion, shooter);
-	                            World world = shooter.getWorld();
-	                            world.playEffect(shooter.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                            applyPotionEffects(potion, arrow.getWorld(), arrow.getLocation(), shooter);
+	                            World world = arrow.getWorld();
+	                            world.playEffect(arrow.getLocation(), Effect.POTION_BREAK, x.getDurability());
 	                            int amount = x.getAmount() - 1;
 	                            if (amount <= 0) {
 	                              inventory.clear(firstpotionslot);
@@ -130,9 +149,9 @@ public class DCArrows extends JavaPlugin implements Listener{
 	                              int dt = x.getDurability();
 	                              if ((potion.isSplash()) && ((dt != 0) || (dt != 16) || (dt != 32) || (dt != 64) || (dt != 16384) || (dt != 8192)))
 	                              {
-	                                applyPotionEffects(potion, target);
-	                                World world = target.getWorld();
-	                                world.playEffect(target.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                                applyPotionEffects(potion, arrow.getWorld(), arrow.getLocation(), shooter);
+	                                World world = arrow.getWorld();
+	                                world.playEffect(arrow.getLocation(), Effect.POTION_BREAK, x.getDurability());
 	                                int amount = x.getAmount() - 1;
 	                                if (amount <= 0) {
 	                                  inventory.clear(firstpotionslot); break;
@@ -157,9 +176,9 @@ public class DCArrows extends JavaPlugin implements Listener{
 	                          if ((x != null) && (x.getType() == Material.POTION) && (x.getDurability() == dv)) {
 	                            Potion potion = Potion.fromItemStack(x);
 
-	                            applyPotionEffects(potion, target);
-	                            World world = target.getWorld();
-	                            world.playEffect(target.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                            applyPotionEffects(potion, arrow.getWorld(), arrow.getLocation(), shooter);
+	                            World world = arrow.getWorld();
+	                            world.playEffect(arrow.getLocation(), Effect.POTION_BREAK, x.getDurability());
 	                            int amount = x.getAmount() - 1;
 	                            if (amount <= 0) {
 	                              inventory.clear(firstpotionslot); break;
@@ -194,9 +213,9 @@ public class DCArrows extends JavaPlugin implements Listener{
 	                        Potion potion = Potion.fromItemStack(x);
 	                        if (potion.isSplash())
 	                        {
-	                          applyPotionEffects(potion, target);
-	                          World world = target.getWorld();
-	                          world.playEffect(target.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                          applyPotionEffects(potion, arrow.getWorld(), arrow.getLocation(), shooter);
+	                          World world = arrow.getWorld();
+	                          world.playEffect(arrow.getLocation(), Effect.POTION_BREAK, x.getDurability());
 
 	                          int amount = x.getAmount() - 1;
 	                          if (amount <= 0) {
@@ -207,9 +226,9 @@ public class DCArrows extends JavaPlugin implements Listener{
 	                          }
 	                        }
 	                        else {
-	                          applyPotionEffects(potion, shooter);
-	                          World world = shooter.getWorld();
-	                          world.playEffect(shooter.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                          applyPotionEffects(potion, arrow.getWorld(), arrow.getLocation(), shooter);
+	                          World world = arrow.getWorld();
+	                          world.playEffect(arrow.getLocation(), Effect.POTION_BREAK, x.getDurability());
 	                          int amount = x.getAmount() - 1;
 	                          if (amount <= 0) {
 	                            inventory.clear(firstpotionslot);
@@ -229,9 +248,9 @@ public class DCArrows extends JavaPlugin implements Listener{
 	                          if ((x != null) && (x.getType() == Material.POTION) && (x.getDurability() == dv)) {
 	                            Potion potion = Potion.fromItemStack(x);
 
-	                            applyPotionEffects(potion, shooter);
-	                            World world = shooter.getWorld();
-	                            world.playEffect(shooter.getLocation(), Effect.POTION_BREAK, x.getDurability());
+	                            applyPotionEffects(potion, arrow.getWorld(), arrow.getLocation(), shooter);
+	                            World world = arrow.getWorld();
+	                            world.playEffect(arrow.getLocation(), Effect.POTION_BREAK, x.getDurability());
 	                            int amount = x.getAmount() - 1;
 	                            if (amount <= 0) {
 	                              inventory.clear(firstpotionslot); break;
@@ -250,9 +269,9 @@ public class DCArrows extends JavaPlugin implements Listener{
 	                    {
 	                      Potion potion = Potion.fromItemStack(item);
 
-	                      applyPotionEffects(potion, shooter);
-	                      World world = shooter.getWorld();
-	                      world.playEffect(shooter.getLocation(), Effect.POTION_BREAK, item.getDurability());
+	                      applyPotionEffects(potion, arrow.getWorld(), arrow.getLocation(), shooter);
+	                      World world = arrow.getWorld();
+	                      world.playEffect(arrow.getLocation(), Effect.POTION_BREAK, item.getDurability());
 	                      inventory.clear(potionslot);
 	                    }
 	                }
@@ -263,18 +282,19 @@ public class DCArrows extends JavaPlugin implements Listener{
 	      }
 	    }
 	  }
-
-	  void applyPotionEffects(Potion potion, LivingEntity entity)
-	  {
-	    ItemStack stack = potion.toItemStack(1);
-	    PotionMeta meta = (PotionMeta)stack.getItemMeta();
-	    if (meta.hasCustomEffects()) {
-	      List<PotionEffect> effects = meta.getCustomEffects();
-	      for (PotionEffect i : effects)
-	        entity.addPotionEffect(i);
-	    }
-	    else {
-	      potion.apply(entity);
-	    }
-	  }
+	
+	void applyPotionEffects(Potion potion, World world, Location location, LivingEntity shooter ){
+		{
+		    ItemStack stack = potion.toItemStack(1);
+		    PotionMeta meta = (PotionMeta)stack.getItemMeta();
+		    if (meta.hasCustomEffects()) {
+		      List<PotionEffect> effects = meta.getCustomEffects();
+		      for (PotionEffect i : effects)
+               shooter.addPotionEffect(i);
+		    }
+		    else {
+		      potion.apply(shooter);
+		    }
 	}
+	}
+}
